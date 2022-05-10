@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <title>t56k devlog</title>
+  </head>
+<body>
+            <header class="container">
+                
+        <nav>
+            <ul>
+                <li><strong><a href="/">t56k devlog</a></strong></li>
+            </ul>
+            <ul>
+                <li><a href="https://github.com/t56k/" target="_blank">github</a></li>
+                <li><a href="https://twitter.com/t56k_/" target="_blank">twitter</a></li>
+            </ul>
+        </nav>
+        <mark>Development notes from whenever I think to update them</mark>
+    
+            </header>
+            <main class="container">
+                <small>2022-05-11 09:18:23.866070969 +10:00</small>
+                <h1>Ripping off the static site generator</h1>
+<p>I totally stole the generator for this site from Sylvain Kerkour’s <a href="https://kerkour.com/rust-static-site-generator">blog post</a> from last September. While I have customised it a fair bit by changing out the HTTP server to something I’m familiar with, by adding CSS via Pico, and by adding metadata to the Markdown file <code>Vec</code>s so that posts have timestamps, the logic of the file conversion remains.</p>
+<p>Looking at first-pass issues, the shoehorning of the metadata into a tuple feels pretty clunky:</p>
+<pre><code>let markdown_files: Vec&lt;(String, fs::Metadata)&gt; = walkdir::WalkDir::new(content_dir)
+    .into_iter()
+    .filter_map(|e| e.ok())
+    .filter(|e| e.path().display().to_string().ends_with(&quot;.md&quot;))
+    .map(|e| (e.path().display().to_string(), e.metadata().unwrap()))
+    .collect();
+
+let mut html_files = Vec::with_capacity(markdown_files.len());
+
+for file in &amp;markdown_files {
+    let mut html = templates::HEADER.to_owned();
+    let markdown = fs::read_to_string(&amp;file.0)?;
+    let parser = pulldown_cmark::Parser::new_ext(&amp;markdown, pulldown_cmark::Options::all());
+    let modified: DateTime&lt;Local&gt; = file.1.modified()?.into();
+
+    let mut body = String::new();
+    pulldown_cmark::html::push_html(&amp;mut body, parser);
+
+    html.push_str(templates::body(&amp;body, &amp;modified.to_string()).as_str());
+
+    // ...
+
+    html_files.push((html_file, modified.to_string()));
+}
+</code></pre>
+<p>I’m not quite sure what a better approach would be at first glance, but it can safely be ignored for the time being.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>© 2022 <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

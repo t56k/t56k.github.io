@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <title>t56k devlog</title>
+  </head>
+<body>
+            <header class="container">
+                
+        <nav>
+            <ul>
+                <li><strong><a href="/">t56k devlog</a></strong></li>
+            </ul>
+            <ul>
+                <li><a href="https://github.com/t56k/" target="_blank">gh</a></li>
+                <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+                <li><a href="https://twitter.com/t56k_/" target="_blank">tw</a></li>
+            </ul>
+        </nav>
+        <mark>Development notes from whenever I think to update them</mark>
+    
+            </header>
+            <main class="container">
+                <small>2022-05-12 21:58:11.684767175 +10:00</small>
+                <h1>Shell and vim reference 101</h1>
+<p>I’ve had a file live on my two machines for years now that has various commands written in it that either refuse to stick in my head, or their syntax is regrettable, or they’re used just infrequently enough to forget. I’m putting them here so I can access them in other places, and maybe they’ll help you, too.</p>
+<h2>neovim</h2>
+<ul>
+<li><code>/-.*-/</code> searches for at least two hyphens</li>
+<li><code>:%s/^/whatever</code> prepend to every line</li>
+<li><code>:'&lt;,'&gt;!bc</code> do the math</li>
+<li><code>:cfdo s/what/ever/g</code> find and replace in quickfix</li>
+<li><code>:g/whatever/d</code> delete lines containing whatever</li>
+<li><code>:gr whatever</code> fill quickfix</li>
+<li><code>:r !ls -la ~/whatever</code> copies output of ! into buffer</li>
+<li><code>:r !sed -n 10,25p whatever</code> read lines 10-25 from whatever into buffer</li>
+<li><code>:verbose map &lt;leader&gt;</code> get those mapping conflicts</li>
+<li><code>:w %:p:h/whatever</code> write to path</li>
+<li><code>:wa</code> write all buffers</li>
+<li><code>&lt;leader&gt;rg whatever</code> grep exactly, see <a href="https://github.com/t56k/dotfiles/blob/main/init.vim">init.vim</a></li>
+<li><code>vap</code> visually select whole paragraph</li>
+<li><code>:n *.md</code> open all</li>
+<li><code>:sav %:h/new-whatever.rs</code></li>
+<li><code>Ctrl-t</code> push telescope to trouble’s quickfix</li>
+</ul>
+<h2>zsh</h2>
+<ul>
+<li><code>for i in $(cat whatever); do mv ${i}* new-whatever; done</code> move partial matches</li>
+<li><code>fd -H 'whatever' -tf -X rm -i</code> remove interactively with <code>fd</code></li>
+</ul>
+<h2>tmux</h2>
+<ul>
+<li><code>Ctrl-a [</code> enter scrolling mode</li>
+<li><code>Ctrl-a :swap-window -s 1 -t 3</code> swap tabs in tmux</li>
+</ul>
+<p>Plenty more are detailed in my <a href="https://github.com/t56k/dotfiles">dotfiles</a> too.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>© 2022 <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <title>t56k devlog</title>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k/" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_/" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever I think to update them</mark>
+
+            </header>
+            <main class="container">
+                <small>2022-05-13 08:33:08.196268093 +10:00</small>
+                <h1>Sorting by tuple value in Rust</h1>
+<p>In publishing my last post, I realised my <code>Vec&lt;(String, fs::Metadata)&gt;</code> wasn’t sorted by the second tuple value, meaning the posts in the index don’t appear in chronological order. Obviously, for a blog, this is just plain wrong.</p>
+<p>So, at first glance, there appear to be a couple of options available to sort them–i.e., either I sort <code>markdown_files</code> which’d require implementing <code>Ord</code>, <code>PartialOrd</code> and <code>PartialEq</code> for <code>fs::Metadata</code>, or I could sort the <code>html_files</code> vector naturally since it’s a <code>Vec&lt;(String, String)&gt;</code>.</p>
+<pre><code>fn rebuild_site(content_dir: &amp;str, output_dir: &amp;str) -&gt; SSRGResult&lt;()&gt; {
+    let _ = fs::remove_dir_all(output_dir);
+
+    let markdown_files: Vec&lt;(String, fs::Metadata)&gt; = walkdir::WalkDir::new(content_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().display().to_string().ends_with(&quot;.md&quot;))
+        .map(|e| (e.path().display().to_string(), e.metadata().expect(&quot;failed to get metadata&quot;)))
+        .collect();
+
+    let mut html_files = Vec::with_capacity(markdown_files.len());
+
+    for file in &amp;markdown_files {
+        let mut html = templates::HEADER.to_owned();
+        let markdown = fs::read_to_string(&amp;file.0)?;
+        let parser = pulldown_cmark::Parser::new_ext(&amp;markdown, pulldown_cmark::Options::all());
+        let modified: DateTime&lt;Local&gt; = file.1.modified()?.into();
+
+        let mut body = String::new();
+        pulldown_cmark::html::push_html(&amp;mut body, parser);
+
+        html.push_str(templates::body(&amp;body, &amp;modified.to_string()).as_str());
+        html.push_str(templates::FOOTER);
+
+        let html_file = file
+            .0
+            .replace(content_dir, output_dir)
+            .replace(&quot;.md&quot;, &quot;.html&quot;);
+
+        let folder = Path::new(&amp;html_file).parent().unwrap();
+        let _ = fs::create_dir_all(folder);
+        fs::write(&amp;html_file, html)?;
+
+        html_files.push((html_file, modified.to_string()));
+    }
+
+    write_index(html_files, output_dir)?;
+    Ok(())
+}
+</code></pre>
+<p>Sorting <code>html_files</code> with something like <code>html_files.sort_by_key(|k| k.1);</code> returns an error:</p>
+<pre><code>html_files.sort_by_key(|k| k.1);
+                           ^^^ move occurs because `k.1` has type `std::string::String`, which does not implement the `Copy` trait
+</code></pre>
+<p>Implementing <code>Copy</code> for <code>String</code> seems like overkill here.</p>
+<p>A better solution appears to be extracting the <code>modified()</code> value when collecting <code>markdown_files</code>, then sorting the resulting <code>SystemTime</code>.</p>
+<pre><code>let mut markdown_files: Vec&lt;(String, SystemTime)&gt; = walkdir::WalkDir::new(content_dir)
+    .into_iter()
+    .filter_map(|e| e.ok())
+    .filter(|e| e.path().display().to_string().ends_with(&quot;.md&quot;))
+    .map(|e| (e.path().display().to_string(), e.metadata().expect(&quot;failed to get metadata&quot;).modified().unwrap()))
+    .collect();
+
+markdown_files.sort_by_key(|file| file.1);
+</code></pre>
+<p>Better, but backwards.</p>
+<pre><code>markdown_files.sort_by_key(|file| file.1);
+markdown_files.reverse();
+</code></pre>
+<p>Done. Blogging’s better when we start with the newest post.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>© 2022 <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

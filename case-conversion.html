@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <title>t56k devlog</title>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k/" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_/" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>2022-05-13 10:56:56.733270322 +10:00</small>
+                <h1>Case conversion</h1>
+<p>What with my being in clean-up mode, I realised the kebab-case blog post titles weren’t all that they could be. I figured something like Ruby’s <code>.to_sentence</code> would work better. In Rust, though, of course nothing like that exists. After all:</p>
+<pre><code>assert_eq!(&quot;Case conversion&quot;, &quot;case-conversion&quot;.to_sentence_but_missing_fn());
+</code></pre>
+<p>A quick Google found <a href="https://docs.rs/convert_case/latest/convert_case/">convert_case</a>, but given that suitable conversions were only <code>Case::Title</code> or <code>Case::Lower</code> it wasn’t quite what I wanted. Moreover, the fewer dependencies the better. Given that it’s not exactly the most complex task, let’s impl this thing ourselves.</p>
+<p>It’s pretty easy in Rust to replace hyphens with spaces:</p>
+<pre><code>let clean_file_name = &quot;case-conversion&quot;.to_string();
+let title = str::replace(clean_file_name, '-', &quot; &quot;);
+</code></pre>
+<p>Capitalising the first character, though, is another story. There’s a decently-sized <a href="https://stackoverflow.com/questions/38406793/why-is-capitalizing-the-first-letter-of-a-string-so-convoluted-in-rust">thread</a> on this precise topic over at Stack Overflow, the depths of which I won’t dive here. What I will do, though, is steal the solution:</p>
+<pre><code>fn titlize(s: &amp;str) -&gt; String {
+    let mut c = s.chars();
+
+    match c.next() {
+        None =&gt; String::new(),
+        Some(f) =&gt; f.to_uppercase().collect::&lt;String&gt;() + c.as_str(),
+    }
+}
+</code></pre>
+<p>Accordingly, now we can simply call the fn on <code>title</code>:</p>
+<pre><code>titlize(&amp;title);
+</code></pre>
+<p>And there we have it: prettier titles with no additional crates or CSS noise.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

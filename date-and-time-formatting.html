@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <title>t56k devlog</title>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k/" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_/" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Sat, 14 May 2022 08:41:09 +1000</small>
+                <h1>Date and time formatting</h1>
+<p>Another quality-of-life improvement is the date and time formatting issue. No one really needs all those microseconds for a blog post.</p>
+<blockquote>
+<p>2022-05-13 10:56:56.733270322 +10:00 Case conversion</p>
+</blockquote>
+<p>Given our datetime is collected roughly like so:</p>
+<pre><code>use chrono::{DateTime, Local};
+
+let modified_systemtime = e.metadata()
+    .expect(&quot;failed to get metadata&quot;)
+    .modified()
+    .expect(&quot;failed to get modified&quot;);
+
+let modified: DateTime&lt;Local&gt; = modified_systemtime.into();
+
+modified.to_string()
+</code></pre>
+<p>We have a couple of options. Astute readers will notice we’re using <a href="https://docs.rs/chrono/0.4.19/chrono/index.html#formatting-and-parsing">chrono</a> which handily comes with a couple of formatting options. The work’s beed done for us:</p>
+<pre><code>modified.to_rfc2822()
+</code></pre>
+<p>Returns this:</p>
+<blockquote>
+<p>Fri, 13 May 2022 10:56:56 +1000 Case conversion</p>
+</blockquote>
+<p>Much better.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

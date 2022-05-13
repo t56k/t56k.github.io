@@ -23,7 +23,7 @@
 
             </header>
             <main class="container">
-                <small>2022-05-13 08:33:08.196268093 +10:00</small>
+                <small>Fri, 13 May 2022 08:33:08 +1000</small>
                 <h1>Sorting by tuple value in Rust</h1>
 <p>In publishing my last post, I realised my <code>Vec&lt;(String, fs::Metadata)&gt;</code> wasn’t sorted by the second tuple value, meaning the posts in the index don’t appear in chronological order. Obviously, for a blog, this is just plain wrong.</p>
 <p>So, at first glance, there appear to be a couple of options available to sort them–i.e., either I sort <code>markdown_files</code> which’d require implementing <code>Ord</code>, <code>PartialOrd</code> and <code>PartialEq</code> for <code>fs::Metadata</code>, or I could sort the <code>html_files</code> vector naturally since it’s a <code>Vec&lt;(String, String)&gt;</code>.</p>

@@ -23,13 +23,25 @@
 
             </header>
             <main class="container">
-                <small>Sat, 14 May 2022 16:08:37 +1000</small><br /><a href="/double-commit-and-push-bash-script.html">Double commit and push bash script</a><hr /><br />
-<small>Sat, 14 May 2022 08:45:59 +1000</small><br /><a href="/date-and-time-formatting.html">Date and time formatting</a><hr /><br />
-<small>Fri, 13 May 2022 10:56:56 +1000</small><br /><a href="/case-conversion.html">Case conversion</a><hr /><br />
-<small>Fri, 13 May 2022 08:33:08 +1000</small><br /><a href="/sorting-by-tuple-value-in-rust.html">Sorting by tuple value in rust</a><hr /><br />
-<small>Thu, 12 May 2022 21:58:11 +1000</small><br /><a href="/shell-and-vim-reference-101.html">Shell and vim reference 101</a><hr /><br />
-<small>Wed, 11 May 2022 09:18:23 +1000</small><br /><a href="/ripping-off-the-static-site-generator.html">Ripping off the static site generator</a><hr /><br />
-<small>Wed, 11 May 2022 08:48:44 +1000</small><br /><a href="/immediate-challenges-migrating-a-ruby-backend-to-rust.html">Immediate challenges migrating a ruby backend to rust</a><hr />
+                <small>Sat, 14 May 2022 16:08:37 +1000</small>
+                <h1>Double commit and push bash script</h1>
+<p>I wrote a quick bash script to publish to the two relevant repos (the <a href="https://github.com/t56k/ssrg">codebase</a> and <a href="https://github.com/t56k/t56k.github.io">this</a> site) at once.</p>
+<pre><code>#!/usr/bin/env bash
+
+git add .
+git commit -m &quot;$1&quot;
+git push origin main
+
+cp public/* ../t56k.github.io
+cd ../t56k.github.io
+git add .
+git commit -m &quot;$1&quot;
+git push origin main
+
+cd ../ssrg
+</code></pre>
+<p>This is fine for a first-pass but it doesn’t build the HTML first, meaning I still need to <code>cargo run</code> before running it.</p>
+
             </main>
         </body>
     <footer class="container">

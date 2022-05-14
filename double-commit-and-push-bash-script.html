@@ -23,7 +23,7 @@
 
             </header>
             <main class="container">
-                <small>Sat, 14 May 2022 16:08:37 +1000</small>
+                <small>Sat, 14 May 2022 16:20:53 +1000</small>
                 <h1>Double commit and push bash script</h1>
 <p>I wrote a quick bash script to publish to the two relevant repos (the <a href="https://github.com/t56k/ssrg">codebase</a> and <a href="https://github.com/t56k/t56k.github.io">this</a> site) at once.</p>
 <pre><code>#!/usr/bin/env bash
@@ -40,7 +40,7 @@ git push origin main
 
 cd ../ssrg
 </code></pre>
-<p>This is fine for a first-pass but it doesn’t build the HTML first, meaning I still need to <code>cargo run</code> before running it.</p>
+<p>This is fine for a first-pass but it doesn’t build the HTML first, meaning I still need to <code>cargo run</code> before running it. The best option here is to add some kind of build flag to write the HTML files.</p>
 
             </main>
         </body>

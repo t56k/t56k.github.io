@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <title>t56k devlog</title>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k/" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_/" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Mon, 16 May 2022 08:41:38 +1000</small>
+                <h1>Individual file writing</h1>
+<p>A glaring issue in the <a href="https://github.com/t56k/ssrg/commit/b31bc2837e1f4c0ee61ceb7433730af1242d2799">previous</a> ssrg commit was the fact that the entire site was recompiled on each change. This is even mentioned in Kerkour’s original <a href="https://kerkour.com/rust-static-site-generator">blog post</a> where it is suggested that it should be looked at in future versions. So, let’s get to it.</p>
+<p>In the <code>main()</code> fn, we can easily see how the site is rebuilt on every <a href="https://github.com/francesca64/hotwatch">hotwatch</a> event:</p>
+<pre><code>tokio::task::spawn_blocking(move || {
+    let mut watch = Hotwatch::new().expect(&quot;hotwatch failed&quot;);
+
+    watch
+        .watch(CONTENT, |_event: Event| {
+            rebuild_site(CONTENT, PUBLIC).expect(&quot;rebuilding&quot;);
+        })
+        .expect(&quot;failed to watch content&quot;);
+
+    loop {
+        thread::sleep(Duration::from_secs(1));
+    }
+});
+</code></pre>
+<p>We need to leverage information stored in <code>Event</code> so that we can rebuild whatever file was saved and not the entire site. Thankfully, <code>hotwatch</code>’s only example indicates how to destructure the <code>Event</code>.</p>
+<pre><code>if let Event::Write(path) = event {
+    println!(&quot;{} has changed.&quot;, path);
+}
+</code></pre>
+<p>Accordingly, we can change our code to suit:</p>
+<pre><code>watch
+    .watch(CONTENT, |event: Event| {
+        if let Event::Write(path) = event {
+            println!(&quot;rebuilding {:?}&quot;, path);
+            // new_fn_to_build(`path`)
+        }
+    })
+    .expect(&quot;failed to watch content&quot;);
+</code></pre>
+<p>That’s one problem solved.</p>
+<p>Now we need to change the build fns to be able to rebuild one HTML file based on the Markdown’s path and not based on the whole <code>CONTENT</code> dir. In practical terms, that means splitting the <code>rebuilt_site()</code> fn in half–right between the file collection and the block that does the HTML file building. Meaning this rather large fn:</p>
+<pre><code>fn rebuild_site(content_dir: &amp;str, output_dir: &amp;str) -&gt; SSRGResult&lt;()&gt; {
+    let _ = fs::remove_dir_all(output_dir);
+
+    let mut markdown_files: Vec&lt;(String, SystemTime)&gt; = walkdir::WalkDir::new(content_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().display().to_string().ends_with(&quot;.md&quot;))
+        .map(|e| {
+            (
+                e.path().display().to_string(),
+                e.metadata()
+                    .expect(&quot;failed to get metadata&quot;)
+                    .modified()
+                    .expect(&quot;failed to get modified&quot;),
+            )
+        })
+        .collect();
+
+    markdown_files.sort_by_key(|file| file.1);
+    markdown_files.reverse();
+
+    let mut html_files = Vec::with_capacity(markdown_files.len());
+
+    for file in &amp;markdown_files {
+        let mut html = templates::HEADER.to_owned();
+        let markdown = fs::read_to_string(&amp;file.0)?;
+        let parser = pulldown_cmark::Parser::new_ext(&amp;markdown, pulldown_cmark::Options::all());
+        let modified: DateTime&lt;Local&gt; = file.1.into();
+
+        let mut body = String::new();
+        pulldown_cmark::html::push_html(&amp;mut body, parser);
+
+        html.push_str(templates::body(&amp;body, &amp;modified.to_rfc2822()).as_str());
+        html.push_str(templates::FOOTER);
+
+        let html_file = file
+            .0
+            .replace(content_dir, output_dir)
+            .replace(&quot;.md&quot;, &quot;.html&quot;);
+
+        let folder = Path::new(&amp;html_file).parent().unwrap();
+        let _ = fs::create_dir_all(folder);
+        fs::write(&amp;html_file, html)?;
+
+        html_files.push((html_file, modified.to_rfc2822()));
+    }
+
+    write_index(html_files, output_dir)?;
+    Ok(())
+}
+</code></pre>
+<p>Can be better expressed as three (well four really) more succinct ones:</p>
+<pre><code>fn build_site() -&gt; SSRGResult&lt;()&gt; {
+    let _ = fs::remove_dir_all(PUBLIC);
+    let files = markdown_files()?;
+    for file in files {
+        write_file(file)?;
+    }
+
+    write_index()?;
+    Ok(())
+}
+
+fn write_file(file: File) -&gt; SSRGResult&lt;()&gt; {
+    let mut html = templates::HEADER.to_owned();
+    let markdown = fs::read_to_string(&amp;file.0)?;
+    let parser = pulldown_cmark::Parser::new_ext(&amp;markdown, pulldown_cmark::Options::all());
+    let modified: DateTime&lt;Local&gt; = file.1.into();
+
+    let mut body = String::new();
+    pulldown_cmark::html::push_html(&amp;mut body, parser);
+
+    html.push_str(templates::body(&amp;body, &amp;modified.to_rfc2822()).as_str());
+    html.push_str(templates::FOOTER);
+
+    let html_file = file.0.replace(CONTENT, PUBLIC).replace(&quot;.md&quot;, &quot;.html&quot;);
+    let folder = Path::new(&amp;html_file).parent().unwrap();
+    let _ = fs::create_dir_all(folder);
+    fs::write(&amp;html_file, html)?;
+
+    Ok(())
+}
+
+fn markdown_files() -&gt; SSRGResult&lt;Vec&lt;File&gt;&gt; {
+    let mut files: Vec&lt;File&gt; = walkdir::WalkDir::new(&amp;CONTENT)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().display().to_string().ends_with(&quot;.md&quot;))
+        .map(|e| {
+            (
+                e.path().display().to_string(),
+                e.metadata()
+                    .expect(&quot;failed to get metadata&quot;)
+                    .modified()
+                    .expect(&quot;failed to get modified&quot;),
+            )
+        })
+        .collect();
+
+    files.sort_by_key(|file| file.1);
+    files.reverse();
+
+    Ok(files)
+}
+</code></pre>
+<p>Second problem solved.</p>
+<p>Building the index required some additional changes. In the original function, it used the same collection of Markdown files from the HTML build which is all well and good for that context, but we can’t enjoy that luxury when building individual HTML files. This is because we need to preserve the chronology of the Markdown files and not their respective HTML products–there’s little point having a blog where every post is dated by the last build.</p>
+<p>Lazily, the simplest way forward is to just use the <code>markdown_files()</code> fn and replace the file extensions.</p>
+<pre><code>fn write_index() -&gt; SSRGResult&lt;()&gt; {
+    let files = markdown_files()?;
+
+    let mut html = templates::HEADER.to_owned();
+    let body = files
+        .into_iter()
+        .map(|(file, modified)| {
+            let file_name = file.trim_start_matches(CONTENT).replace(&quot;.md&quot;, &quot;.html&quot;);
+            let clean_file_name = file_name.trim_start_matches('/').trim_end_matches(&quot;.html&quot;);
+            let title = str::replace(clean_file_name, '-', &quot; &quot;);
+            let relative_mod: DateTime&lt;Local&gt; = modified.into();
+
+            format!(
+                r#&quot;&lt;small&gt;{}&lt;/small&gt;&lt;br /&gt;&lt;a href=&quot;{}&quot;&gt;{}&lt;/a&gt;&lt;hr /&gt;&quot;#,
+                relative_mod.to_rfc2822(),
+                file_name,
+                helpers::titlize(&amp;title)
+            )
+        })
+        .collect::&lt;Vec&lt;String&gt;&gt;()
+        .join(&quot;&lt;br /&gt;\n&quot;);
+
+    html.push_str(templates::index(&amp;body).as_str());
+    html.push_str(templates::FOOTER);
+
+    let index_path = Path::new(&amp;PUBLIC).join(&quot;index.html&quot;);
+    fs::write(index_path, html)?;
+
+    Ok(())
+}
+</code></pre>
+<p>We’re running that <code>markdown_files()</code> fn twice now which feels wasteful. Storing the files in a <code>Vec</code> to be updated on writes might be a little less costly. Still, could be worse, will be better.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

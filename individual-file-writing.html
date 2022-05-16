@@ -23,8 +23,8 @@
 
             </header>
             <main class="container">
-                <small>Mon, 16 May 2022 08:41:35 +1000</small>
-                <h1>Individual file writing</h1>
+                <small>Mon, 16 May 2022 16:09:32 +1000</small>
+                <h1>Individual file writing and cleanup</h1>
 <p>A glaring issue in the <a href="https://github.com/t56k/ssrg/commit/b31bc2837e1f4c0ee61ceb7433730af1242d2799">previous</a> ssrg commit was the fact that the entire site was recompiled on each change. This is even mentioned in Kerkour’s original <a href="https://kerkour.com/rust-static-site-generator">blog post</a> where it is suggested that it should be looked at in future versions. So, let’s get to it.</p>
 <p>In the <code>main()</code> fn, we can easily see how the site is rebuilt on every <a href="https://github.com/francesca64/hotwatch">hotwatch</a> event:</p>
 <pre><code>tokio::task::spawn_blocking(move || {
@@ -58,7 +58,7 @@
 </code></pre>
 <p>That’s one problem solved.</p>
 <p>Now we need to change the build fns to be able to rebuild one HTML file based on the Markdown’s path and not based on the whole <code>CONTENT</code> dir. In practical terms, that means splitting the <code>rebuilt_site()</code> fn in half–right between the file collection and the block that does the HTML file building. Meaning this rather large fn:</p>
-<pre><code>fn rebuild_site(content_dir: &amp;str, output_dir: &amp;str) -&gt; SSRGResult&lt;()&gt; {
+<pre><code>fn rebuild_site(content_dir: &amp;str, output_dir: &amp;str) -&gt; ErrRes&lt;()&gt; {
     let _ = fs::remove_dir_all(output_dir);
 
     let mut markdown_files: Vec&lt;(String, SystemTime)&gt; = walkdir::WalkDir::new(content_dir)
@@ -110,7 +110,7 @@
 }
 </code></pre>
 <p>Can be better expressed as three (well four really) more succinct ones:</p>
-<pre><code>fn build_site() -&gt; SSRGResult&lt;()&gt; {
+<pre><code>fn build_site() -&gt; ErrRes&lt;()&gt; {
     let _ = fs::remove_dir_all(PUBLIC);
     let files = markdown_files()?;
     for file in files {
@@ -121,7 +121,7 @@
     Ok(())
 }
 
-fn write_file(file: File) -&gt; SSRGResult&lt;()&gt; {
+fn write_file(file: File) -&gt; ErrRes&lt;()&gt; {
     let mut html = templates::HEADER.to_owned();
     let markdown = fs::read_to_string(&amp;file.0)?;
     let parser = pulldown_cmark::Parser::new_ext(&amp;markdown, pulldown_cmark::Options::all());
@@ -141,7 +141,7 @@ fn write_file(file: File) -&gt; SSRGResult&lt;()&gt; {
     Ok(())
 }
 
-fn markdown_files() -&gt; SSRGResult&lt;Vec&lt;File&gt;&gt; {
+fn markdown_files() -&gt; ErrRes&lt;Vec&lt;File&gt;&gt; {
     let mut files: Vec&lt;File&gt; = walkdir::WalkDir::new(&amp;CONTENT)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -166,7 +166,7 @@ fn markdown_files() -&gt; SSRGResult&lt;Vec&lt;File&gt;&gt; {
 <p>Second problem solved.</p>
 <p>Building the index required some additional changes. In the original function, it used the same collection of Markdown files from the HTML build which is all well and good for that context, but we can’t enjoy that luxury when building individual HTML files. This is because we need to preserve the chronology of the Markdown files and not their respective HTML products–there’s little point having a blog where every post is dated by the last build.</p>
 <p>Lazily, the simplest way forward is to just use the <code>markdown_files()</code> fn and replace the file extensions.</p>
-<pre><code>fn write_index() -&gt; SSRGResult&lt;()&gt; {
+<pre><code>fn write_index() -&gt; ErrRes&lt;()&gt; {
     let files = markdown_files()?;
 
     let mut html = templates::HEADER.to_owned();

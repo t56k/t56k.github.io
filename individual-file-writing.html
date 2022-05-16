@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="css/pico.min.css">
     <title>t56k devlog</title>
   </head>
 <body>
@@ -23,7 +23,7 @@
 
             </header>
             <main class="container">
-                <small>Mon, 16 May 2022 08:41:38 +1000</small>
+                <small>Mon, 16 May 2022 08:41:35 +1000</small>
                 <h1>Individual file writing</h1>
 <p>A glaring issue in the <a href="https://github.com/t56k/ssrg/commit/b31bc2837e1f4c0ee61ceb7433730af1242d2799">previous</a> ssrg commit was the fact that the entire site was recompiled on each change. This is even mentioned in Kerkour’s original <a href="https://kerkour.com/rust-static-site-generator">blog post</a> where it is suggested that it should be looked at in future versions. So, let’s get to it.</p>
 <p>In the <code>main()</code> fn, we can easily see how the site is rebuilt on every <a href="https://github.com/francesca64/hotwatch">hotwatch</a> event:</p>

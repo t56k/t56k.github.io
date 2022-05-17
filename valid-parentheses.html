@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>t56k devlog</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MVS9VFCDJV"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MVS9VFCDJV');
+    </script>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k/" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_/" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Tue, 17 May 2022 16:47:06 +1000</small>
+                <h1>Valid parentheses</h1>
+<p>Leetcode, question 20. Valid parentheses. Seems straightforward enough. Kinda.</p>
+<blockquote>
+<p>Given a string s containing just the characters <code>(</code>, <code>)</code>, <code>{</code>, <code>}</code>, <code>[</code> and <code>]</code>, determine if the input string is valid.
+An input string is valid if:</p>
+<ol>
+<li>Open brackets must be closed by the same type of brackets.</li>
+<li>Open brackets must be closed in the correct order.</li>
+</ol>
+</blockquote>
+<p>Parsing unknown data is not for the faint of heart. So, scratch that, I’m going straight to the hints for this one.</p>
+<h2>Hint one</h2>
+<blockquote>
+<p>An interesting property about a valid parenthesis expression is that a sub-expression of a valid expression should also be a valid expression. (Not every sub-expression) e.g.</p>
+</blockquote>
+<pre><code>{ { } [ ] [ [ [ ] ] ] }  is VALID expression
+          [ [ [ ] ] ]    is VALID sub-expression
+  { } [ ]                is VALID sub-expression
+</code></pre>
+<blockquote>
+<p>Can we exploit this recursive structure somehow?</p>
+</blockquote>
+<p>I’m not convinced that the hint of a recursive strategy is quite enough here. Or, in other words, that’s didn’t really help me much. I’m not sure how to implement a recursive strategy at this point.</p>
+<h2>Hint two</h2>
+<blockquote>
+<p>What if whenever we encounter a matching pair of parenthesis in the expression, we simply remove it from the expression? This would keep on shortening the expression. e.g.</p>
+</blockquote>
+<pre><code>{ { ( { } ) } }
+      |_|
+
+{ { (      ) } }
+    |______|
+
+{ {          } }
+  |__________|
+
+{                }
+|________________|
+
+VALID EXPRESSION!
+</code></pre>
+<p>You can see the thinking between the two hints here. This makes sense. Yet, since we don’t know a lot about the entire structure it is still a cumbersome and costly thing to parse. Onwards.</p>
+<h2>Hint three</h2>
+<blockquote>
+<p>The stack data structure can come in handy here in representing this recursive structure of the problem. We can’t really process this from the inside out because we don’t have an idea about the overall structure. But, the stack can help us process this recursively i.e. from outside to inwards.</p>
+</blockquote>
+<p><a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">Bingo</a>. For those who’ve forgotten this data structure, it’s essentially LIFO, and affords us <code>push()</code> and <code>pop()</code> operations–being that it mirrors the structure of the memory stack in your computer!</p>
+<p>The logic of the solution runs roughly as follows.</p>
+<p>If the current character (represented as bytes in the actual solution) is an opening parenthesis, we push that byte into the stack. If it’s <em>anything else</em> (i.e., a closing parenthesis), we subtract the previous byte (first out or popped [or if there’s none then zero]) from the current byte. If the difference is greater than two, owing to their bytecodes (<code>() [] {} == 40 41 91 93 123 125</code>), we have an invalid <code>String</code>.</p>
+<pre><code>impl Solution {
+    pub fn is_valid(s: String) -&gt; bool {
+        let mut res = vec![];
+
+        for b in s.into_bytes() {
+            match b {
+                b'{' | b'(' | b'[' =&gt; res.push(b),
+                _ if (b - res.pop().unwrap_or(0)) &gt; 2 =&gt; return false,
+                _ =&gt; (),
+            };
+        }
+        res.is_empty()
+    }
+}
+</code></pre>
+<p>Then, because we’re popping the stack, we just need to determine if the stack is empty once the string is parsed.</p>
+<pre><code>Success
+Runtime: 0 ms, faster than 100% of Rust online submissions for Valid Parentheses.
+Memory Usage: 2.1 MB, less than 41% of Rust Valid Parentheses.
+</code></pre>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

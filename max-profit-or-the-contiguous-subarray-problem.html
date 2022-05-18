@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>t56k devlog</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MVS9VFCDJV"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MVS9VFCDJV');
+    </script>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Wed, 18 May 2022 16:27:11 +1000</small>
+                <h1>Max profit, or: the contiguous subarray problem</h1>
+<p><a href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock/">This</a> is a timely question, so it feels pertinent to answer it now.</p>
+<blockquote>
+<p>You are given an array <code>prices</code> where <code>prices[i]</code> is the price of a given stock on the <code>ith</code> day.</p>
+<p>You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.</p>
+<p>Return the maximum profit you can achieve from this transaction. If you cannot achieve any profit, return <code>0</code>.</p>
+</blockquote>
+<p>Example one:</p>
+<pre><code>Input: prices = [7,1,5,3,6,4]
+Output: 5
+Explanation: Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6-1 = 5.
+Note that buying on day 2 and selling on day 1 is not allowed because you must buy before you sell.
+</code></pre>
+<p>Sounds familiar. We want to return the greatest difference in the array going from lowest-left to highest-right. Sounds suspiciously like the <a href="https://en.wikipedia.org/wiki/Maximum_subarray_problem">maximum contiguous subarray</a> problem. Let’s try a first pass.</p>
+<h2>First pass</h2>
+<pre><code>use std::i32;
+
+impl Solution {
+    pub fn max_profit(prices: Vec&lt;i32&gt;) -&gt; i32 {
+        let mut low = i32::MAX;
+        let mut res = 0i32;
+
+        for price in prices {
+            low = i32::min(low, price);
+            res = i32::max(price - low, res);
+        }
+
+        res
+    }
+}
+</code></pre>
+<p>We set the <code>low</code> to the <code>MAX</code> value for the <code>i32</code> type, and the <code>res</code> at <code>0</code> (for the guard clause where no profit is available). Iterating through prices, we set <code>low</code> to the minimum of <code>low</code> and <code>price</code>, and each <code>res</code> to the maximum of the current price (less the cost) and the previous high. Because we only iterate once we necessarily move forward through time.</p>
+<p>Unfortunately, we’re not all that efficient here:</p>
+<pre><code>Success
+Runtime: 26 ms, faster than 16% of Rust online submissions for Best Time to Buy and Sell Stock.
+Memory Usage: 3 MB, less than 65% of Rust Best Time to Buy and Sell Stock.
+</code></pre>
+<p>Let’s say we have a hunch that using <code>min()</code> and <code>max()</code> are causing the issues. Let’s find out.</p>
+<h2>Optimizations</h2>
+<pre><code>impl Solution {
+    pub fn max_profit(prices: Vec&lt;i32&gt;) -&gt; i32 {
+        let mut low = std::i32::MAX;
+        let mut res = 0i32;
+
+        for price in prices {
+            if low &gt; price {
+                low = price;
+            }
+
+            let tmp = price - low;
+            if tmp &gt; res {
+                res = tmp;
+            }
+        }
+
+        res
+    }
+}
+</code></pre>
+<p>Waiting…</p>
+<pre><code>Success
+Runtime: 33 ms, faster than 5% of Rust online submissions for Best Time to Buy and Sell Stock.
+Memory Usage: 3 MB, less than 65% of Rust Best Time to Buy and Sell Stock.
+</code></pre>
+<p>Well, that’s embarrassing.</p>
+<p>We could <code>.fold()</code> the <code>Vec</code> instead of allocating <code>low</code> and <code>res</code> at the top of the fn.</p>
+<pre><code>impl Solution {
+    pub fn max_profit(prices: Vec&lt;i32&gt;) -&gt; i32 {
+        prices
+            .iter()
+            .fold((0, i32::MAX), |(mut res, mut low), price| {
+                low = i32::min(*price, low);
+                res = i32::max(res, price - low);
+                (res, low)
+            }).0
+    }
+}
+</code></pre>
+<p>Waiting…</p>
+<pre><code>Success
+Runtime: 32 ms, faster than 5% of Rust online submissions for Best Time to Buy and Sell Stock.
+Memory Usage: 2.9 MB, less than 65% of Rust Best Time to Buy and Sell Stock.
+</code></pre>
+<p>Less memory, which is to be expected.</p>
+<p>What if we iterate over the length of <code>prices</code> instead of the elements?</p>
+<pre><code>impl Solution {
+    pub fn max_profit(prices: Vec&lt;i32&gt;) -&gt; i32 {
+        let mut low = i32::MAX;
+        let mut res = 0i32;
+
+        for i in (0..prices.len()) {
+            let curr = prices[i];
+
+            low = i32::min(low, curr);
+            res = i32::max(curr - low, res);
+        }
+
+        res
+    }
+}
+</code></pre>
+<p>Hmm.</p>
+<pre><code>Success
+Runtime: 18 ms, faster than 50% of Rust online submissions for Best Time to Buy and Sell Stock.
+Memory Usage: 3 MB, less than 65% of Rust Best Time to Buy and Sell Stock.
+</code></pre>
+<p>Still not <em>great</em> but I’m not sure how to improve it at this point.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

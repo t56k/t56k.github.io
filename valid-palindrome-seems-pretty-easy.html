@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>t56k devlog</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MVS9VFCDJV"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MVS9VFCDJV');
+    </script>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Thu, 19 May 2022 10:01:38 +1000</small>
+                <h1>Valid palindrome seems pretty easy</h1>
+<p>Another day, another problem. Let’s get palindromic!</p>
+<blockquote>
+<p>A phrase is a <strong>palindrome</strong> if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward. Alphanumeric characters include letters and numbers.</p>
+<p>Given a string <code>s</code>, return <code>true</code> <em>if it is a palindrome</em>, <em>or</em> <code>false</code> <em>otherwise</em>.</p>
+</blockquote>
+<p>An example reads:</p>
+<pre><code>Input: s = &quot;A man, a plan, a canal: Panama&quot;
+Output: true
+Explanation: &quot;amanaplanacanalpanama&quot; is a palindrome.
+</code></pre>
+<p>So, we can just compare a cleaned <code>Vec</code> of <code>char</code>s with its reverse. We don’t have to worry about dividing by two or anything like that since we can just compare it to its reverse. Here we go.</p>
+<pre><code>impl Solution {
+    pub fn is_palindrome(s: String) -&gt; bool {
+        let cleaned_s = s
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .map(|c| c.to_ascii_lowercase());
+
+        cleaned_s.clone().eq(cleaned_s.rev())
+    }
+}
+</code></pre>
+<p>Well, that one felt good.</p>
+<pre><code>Success
+Runtime: 0 ms, faster than 100% of Rust online submissions for Valid Palindrome.
+Memory Usage: 2.3 MB, less than 75% of Rust Valid Palindrome.
+</code></pre>
+<p>Hard to be unhappy with this result. Not even going to try to optimize this one.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>t56k devlog</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MVS9VFCDJV"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MVS9VFCDJV');
+    </script>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Sat, 21 May 2022 09:08:09 +1000</small>
+                <h1>Finally! Binary search</h1>
+<p>Okay, nuts and bolts time. This problem asks of us:</p>
+<blockquote>
+<p>Given an array of integers <code>nums</code> which is sorted in ascending order, and an integer <code>target</code>, write a function to search <code>target</code> in <code>nums</code>. If <code>target</code> exists, then return its index. Otherwise, return <code>-1</code>.</p>
+<p>You must write an algorithm with <code>O(log n)</code> runtime complexity.</p>
+</blockquote>
+<p>The algoritm is a decent clue. Recall that an optimal (i.e., balanced) binary tree takes <code>O(log n)</code> time to resolve. The first example reads thus:</p>
+<pre><code>Input: nums = [-1,0,3,5,9,12], target = 9
+Output: 4
+Explanation: 9 exists in nums and its index is 4
+</code></pre>
+<p>Easy if we’re talking <code>O(n)</code>, but we’re not. It’s sorted already, so that’s something.</p>
+<h2>First pass</h2>
+<pre><code>use std::cmp::Ordering;
+
+impl Solution {
+    pub fn search(nums: Vec&lt;i32&gt;, target: i32) -&gt; i32 {
+        let (mut min, mut max) = (0, nums.len());
+
+        while min &lt; max {
+            let i = (min + max) / 2;
+            match nums[i].cmp(&amp;target) {
+                Ordering::Equal =&gt; return i as i32,
+                Ordering::Less =&gt; min = i + 1,
+                Ordering::Greater =&gt; max = i,
+            }
+        }
+
+        -1
+    }
+}
+</code></pre>
+<p>Decent speed (comparatively), bad on memory.</p>
+<pre><code>Success
+Runtime: 2 ms, faster than 93% of Rust online submissions for Binary Search.
+Memory Usage: 2.4 MB, less than 15% of Rust Binary Search.
+</code></pre>
+<h2>Suboptimizations</h2>
+<p>A <em>plainer</em> implementation doesn’t save us much.</p>
+<pre><code>impl Solution {
+    pub fn search(nums: Vec&lt;i32&gt;, target: i32) -&gt; i32 {
+        let (mut min, mut max) = (0, nums.len() + 1);
+
+        while min &lt; max {
+            let i = (max + min) &gt;&gt; 1;
+
+            if nums[i] == target { return i as i32; }
+
+            if nums[i] &lt; target {
+                min = i + 1;
+            } else {
+                max = i;
+            }
+        }
+
+        if nums[min] == target {
+            min as i32
+        }
+
+        -1
+    }
+}
+</code></pre>
+<p>Results in:</p>
+<pre><code>Success
+Runtime: 6 ms, faster than 47% of Rust online submissions for Binary Search.
+Memory Usage: 2.5 MB, less than 15% of Rust Binary Search.
+</code></pre>
+<p>Not sure where else to take this one.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

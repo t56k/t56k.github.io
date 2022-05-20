@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>t56k devlog</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MVS9VFCDJV"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MVS9VFCDJV');
+    </script>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Fri, 20 May 2022 12:32:09 +1000</small>
+                <h1>Oh, happy day: valid anagrams</h1>
+<p>I don’t know what it is but the word-puzzle type problems really please me. I guess it’s the Wordle addict in me. Who cares. Here we go:</p>
+<blockquote>
+<p>Given two strings <code>s</code> and <code>t</code>, return <code>true</code> if <code>t</code> is an anagram of <code>s</code>, and <code>false</code> otherwise.</p>
+<p>An Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.</p>
+</blockquote>
+<p>If that wasn’t clear enough:</p>
+<pre><code>Input: s = &quot;anagram&quot;, t = &quot;nagaram&quot;
+Output: true
+</code></pre>
+<p>I like this very much.</p>
+<h2>First pass</h2>
+<p>My initial idea is to convert each to <code>Vec</code>s of <code>chars()</code>, <code>sort()</code>, then check for <code>eq()</code>. Let’s see how far that takes us.</p>
+<pre><code>impl Solution {
+    pub fn is_anagram(s: String, t: String) -&gt; bool {
+        let mut s = Solution::sorted(s);
+        let mut t = Solution::sorted(t);
+
+        s.eq(&amp;t)
+    }
+
+    fn sorted(s: String) -&gt; Vec&lt;char&gt; {
+        let mut res: Vec&lt;char&gt; = s.chars().collect();
+        res.sort_by(|a, b| b.cmp(a));
+
+        res
+    }
+}
+</code></pre>
+<p>Passes the test fine, let’s see how she handles the corners.</p>
+<pre><code>Success
+Runtime: 7 ms, faster than 35% of Rust online submissions for Valid Anagram.
+Memory Usage: 2.7 MB, less than 6% of Rust Valid Anagram.
+</code></pre>
+<p>Ouch. It’s be nice if my intuitions were better out of the gate, but then I guess I wouldn’t be learning anything, and I wouldn’t be able to explain my learning to y’all. Silver linings.</p>
+<h2>Optimizations</h2>
+<p>I should try a <code>HashMap</code>. And maybe bytes.</p>
+<pre><code>use std::collections::HashMap;
+
+impl Solution {
+    pub fn is_anagram(s: String, t: String) -&gt; bool {
+        if s.len() != t.len() {
+            return false;
+        }
+
+        let mut map = HashMap::new();
+        for (a, b) in s.bytes().zip(t.bytes()) {
+            *map.entry(a).or_insert(0) += 1;
+            *map.entry(b).or_insert(0) -= 1;
+        }
+
+        map.values().all(|&amp;c| c == 0)
+    }
+}
+</code></pre>
+<p>Gives us:</p>
+<pre><code>Success
+Runtime: 3 ms, faster than 73% of Rust online submissions for Valid Anagram.
+Memory Usage: 2.4 MB, less than 40% of Rust Valid Anagram.
+</code></pre>
+<p>Good enough!</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>

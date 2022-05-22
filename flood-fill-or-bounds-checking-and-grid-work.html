@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/pico.min.css">
+    <title>t56k devlog</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MVS9VFCDJV"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-MVS9VFCDJV');
+    </script>
+  </head>
+<body>
+            <header class="container">
+                
+    <nav>
+        <ul>
+            <li><strong><a href="/">t56k devlog</a></strong></li>
+        </ul>
+        <ul>
+            <li><a href="https://github.com/t56k" target="_blank">gh</a></li>
+            <li><a href="https://stackoverflow.com/users/1153022/t56k" target="_blank">so</a></li>
+            <li><a href="https://twitter.com/t56k_" target="_blank">tw</a></li>
+        </ul>
+    </nav>
+    <mark>Development notes from whenever</mark>
+
+            </header>
+            <main class="container">
+                <small>Mon, 23 May 2022 09:42:14 +1000</small>
+                <h1>Flood fill, or bounds checking and grid work</h1>
+<p>Alright, this question’s a little more complex than the string/array cakewalks we’ve been enjoying.</p>
+<blockquote>
+<p>An image is represented by an <code>m x n</code> integer grid image where <code>image[i][j]</code> represents the pixel value of the image.</p>
+<p>You are also given three integers <code>sr</code>, <code>sc</code>, and <code>newColor</code>. You should perform a flood fill on the image starting from the pixel <code>image[sr][sc]</code>.</p>
+<p>To perform a flood fill, consider the starting pixel, plus any pixels connected 4-directionally to the starting pixel of the same color as the starting pixel, plus any pixels connected 4-directionally to those pixels (also with the same color), and so on. Replace the color of all of the aforementioned pixels with <code>newColor</code>.</p>
+<p>Return the <em>modified image after performing the flood fill</em>.</p>
+</blockquote>
+<p>Let’s definitely look at the example <em>right now</em>:</p>
+<img src="img/flood1-grid.jpeg" alt="flood fill example 1" />
+<br />
+<br />
+<pre><code>Input: image = [[1,1,1],[1,1,0],[1,0,1]], sr = 1, sc = 1, newColor = 2
+Output: [[2,2,2],[2,2,0],[2,0,1]]
+Explanation: From the center of the image with position (sr, sc) = (1, 1) (i.e., the red pixel), all pixels connected by a path of the same color as the starting pixel (i.e., the blue pixels) are colored with the new color.
+Note the bottom corner is not colored 2, because it is not 4-directionally connected to the starting pixel.
+</code></pre>
+<p>Alright. I think I’m ready. Let’s hop to it.</p>
+<h2>First pass</h2>
+<p>Alright, bounds-checking is the first thing to solve for by grabbing the <code>len()</code> of the image and its first child element. Rust doesn’t handle out of bounds issues gracefully. Not that it should.</p>
+<pre><code>// NOTE: Rows are `y`, cols are `x`
+let y_limit = image.len();
+let x_limit = image[0].len();
+</code></pre>
+<p>Now let’s cast <code>x</code> and <code>y</code> to <code>u8</code> to ease our <code>Vec</code> access and add some safeguards to prevent needless flooding:</p>
+<pre><code>let y = sr as usize;
+let x = sc as usize;
+
+let old_color = image[y][x];
+if old_color == new_color {
+    return image;
+}
+</code></pre>
+<p>This approach is going to build a <code>Vec</code> of tuples repesenting colors that will change on flooding starting with <code>sr</code>/<code>y</code> and <code>sc</code>/<code>x</code>. We also need a mutable reference to <code>image</code> so we can flood it without creating a new <code>image</code>.</p>
+<pre><code>let mut image = image;
+let mut flood = vec![(y, x)];
+</code></pre>
+<p>And we can just <code>if-else</code> the rest <a href="https://github.com/TheAlgorithms/Rust/blob/master/src/graph/depth_first_search.rs">DFS-style</a>:</p>
+<pre><code>while !flood.is_empty() {
+    if let Some(&amp;(y, x)) = flood.last() {
+        image[y][x] = new_color;
+
+        // NOTE: up, down, left, right, out of bounds or other
+        if y &gt; 0 &amp;&amp; image[y - 1][x] == old_color {
+            flood.push((y - 1, x));
+        } else if y + 1 &lt; y_limit &amp;&amp; image[y + 1][x] == old_color {
+            flood.push((y + 1, x));
+        } else if x &gt; 0 &amp;&amp; image[y][x - 1] == old_color {
+            flood.push((y, x - 1));
+        } else if x &lt; x_limit - 1 &amp;&amp; image[y][x + 1] == old_color {
+            flood.push((y, x + 1));
+        } else {
+            flood.pop();
+        }
+    }
+}
+</code></pre>
+<p>Works fine but it’s not what we’d call performant.</p>
+<pre><code>Success
+Runtime: 5 ms, faster than 30% of Rust online submissions for Flood Fill.
+Memory Usage: 2.1 MB, less than 49% of Rust Flood Fill.
+</code></pre>
+<h2>Optimizations</h2>
+<p>Now this is <em>neater</em>, although I’m not really sure it’s measurably better.</p>
+<pre><code>impl Solution {
+    pub fn flood_fill(mut image: Vec&lt;Vec&lt;i32&gt;&gt;, sr: i32, sc: i32, new_color: i32) -&gt; Vec&lt;Vec&lt;i32&gt;&gt; {
+        let y_limit = image.len();
+        let x_limit = image[0].len();
+
+        let y = sr as usize;
+        let x = sc as usize;
+
+        let old_color = image[y][x];
+        if old_color == new_color {
+            return image;
+        }
+
+        let mut flood = vec![(y, x)];
+        while let Some((y, x)) = flood.pop() {
+            if image[y][x] != old_color {
+                continue;
+            }
+
+            image[y][x] = new_color;
+
+            if y &gt; 0 {
+                flood.push((y - 1, x));
+            }
+
+            if y &lt; y_limit - 1 {
+                flood.push((y + 1, x))
+            }
+
+            if x &gt; 0 {
+                flood.push((y, x - 1));
+            }
+
+            if x &lt; x_limit - 1 {
+                flood.push((y, x + 1));
+            }
+        }
+
+        image
+    }
+}
+</code></pre>
+<p>Gives us:</p>
+<pre><code>Success
+Runtime: 4 ms, faster than 57% of Rust online submissions for Flood Fill.
+Memory Usage: 2.2 MB, less than 22% of Rust Flood Fill.
+</code></pre>
+<p>Not much better, although I’m starting to suspect Leetcode isn’t the most consistent in its benchmarking given another run returns this:</p>
+<pre><code>Success
+Runtime: 0 ms, faster than 100% of Rust online submissions for Flood Fill.
+Memory Usage: 2.1 MB, less than 50% of Rust Flood Fill.
+</code></pre>
+<p>I should benchmark locally but I don’t think the dataset is available without manually <code>println!()</code>ing it.</p>
+
+            </main>
+        </body>
+    <footer class="container">
+      <small>Built with <a href="https://github.com/t56k/ssrg" target="_blank">ssrg</a> in 2022 by <a href="https://twitter.com/t56k_" target="_blank">t56k</a></small>
+    </footer>
+</html>
